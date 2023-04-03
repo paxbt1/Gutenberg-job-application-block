@@ -5,12 +5,35 @@
  * Author name: Saeed Ghourbanian ;)
  */
 
+
+
+function get_job_titles()
+{
+    $job_titles = array();
+
+    // Arguments for get_posts function
+    $args = array(
+        'post_type' => 'job_title',
+        'posts_per_page' => -1,
+    );
+
+    $posts = get_posts($args);
+
+    foreach ($posts as $post) {
+        $job_titles[$post->post_title] = $post->ID;
+    }
+
+    return $job_titles;
+}
+
 function sgh_enqueue_job_application_block_js_file()
 {
-    wp_enqueue_script('job-application-block', plugins_url('job-application-block.js', __FILE__), array('wp-blocks','wp-i18n','wp-editor'), true, false);
+    wp_enqueue_script('job-application-block', plugins_url('job-application-block.js', __FILE__), array('wp-blocks','wp-i18n','wp-editor'), false, false);
 
     wp_localize_script('job-application-block', 'job_application_block_vars', array(
-            'nonce' => wp_create_nonce('jab-nonce')
+            'nonce' => wp_create_nonce('jab-nonce'),
+            'options' => get_job_titles(),
+
         ));
 }
 
@@ -74,3 +97,80 @@ function sgh_saveData_callback($data)
 
 add_action('wp_ajax_nopriv_saveData', 'sgh_saveData_callback');
 add_action('wp_ajax_saveData', 'sgh_saveData_callback');
+
+
+
+// Define custom post type
+function create_job_title_post_type()
+{
+    $args = array(
+        'labels' => array(
+            'name' => 'Job Titles',
+            'singular_name' => 'Job Title'
+        ),
+        'public' => true,
+        'has_archive' => true,
+        'supports' => array('title', 'editor'),
+        'menu_icon' => 'dashicons-businessman',
+        'show_in_rest' => true,
+    );
+    register_post_type('job_title', $args);
+}
+add_action('init', 'create_job_title_post_type');
+
+// Define custom taxonomy for skills
+function create_job_title_skills_taxonomy()
+{
+    register_taxonomy(
+        'job_title_skills',
+        'job_title',
+        array(
+            'label' => 'Skills',
+            'rewrite' => array('slug' => 'job_title_skills'),
+            'hierarchical' => false
+        )
+    );
+}
+add_action('init', 'create_job_title_skills_taxonomy');
+
+// Add custom fields for skills to Job Titles post type
+function add_job_title_skills_field()
+{
+    add_meta_box(
+        'job_title_skills_field',
+        'Skills',
+        'render_job_title_skills_field',
+        'job_title',
+        'normal',
+        'high'
+    );
+}
+add_action('add_meta_boxes', 'add_job_title_skills_field');
+
+// Render custom fields for skills in Job Titles post type
+function render_job_title_skills_field($post)
+{
+    $skills = get_post_meta($post->ID, '_job_title_skills', true);
+    $taxonomy = 'job_title_skills';
+    $terms = get_terms($taxonomy, array('hide_empty' => false));
+
+    echo '<label for="job_title_skills">Select Skills: <br> (Hold Crtl Key for multiple selecr)</label><br/>';
+    echo '<select name="job_title_skills[]" multiple>';
+
+    foreach ($terms as $term) {
+        $selected = in_array($term->term_id, $skills) ? 'selected' : '';
+        echo '<option value="' . $term->term_id . '" ' . $selected . '>' . $term->name . '</option>';
+    }
+
+    echo '</select>';
+}
+
+// Save custom fields for skills value for Job Titles as post meta
+function save_job_title_skills_field($post_id)
+{
+    if (isset($_POST['job_title_skills'])) {
+        $skills = $_POST['job_title_skills'];
+        update_post_meta($post_id, '_job_title_skills', $skills);
+    }
+}
+add_action('save_post_job_title', 'save_job_title_skills_field');
