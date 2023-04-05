@@ -5,35 +5,12 @@
  * Author name: Saeed Ghourbanian ;)
  */
 
-
-
-function get_job_titles()
-{
-    $job_titles = array();
-
-    // Arguments for get_posts function
-    $args = array(
-        'post_type' => 'job_title',
-        'posts_per_page' => -1,
-    );
-
-    $posts = get_posts($args);
-
-    foreach ($posts as $post) {
-        $job_titles[$post->post_title] = $post->ID;
-    }
-
-    return $job_titles;
-}
-
 function sgh_enqueue_job_application_block_js_file()
 {
-    wp_enqueue_script('job-application-block', plugins_url('job-application-block.js', __FILE__), array('wp-blocks','wp-i18n','wp-editor'), false, false);
+    wp_enqueue_script('job-application-block', plugins_url('job-application-block.js', __FILE__), array('wp-blocks','wp-i18n','wp-editor'), true, true);
 
     wp_localize_script('job-application-block', 'job_application_block_vars', array(
             'nonce' => wp_create_nonce('jab-nonce'),
-            'options' => get_job_titles(),
-
         ));
 }
 
@@ -112,7 +89,7 @@ function create_job_title_post_type()
         'has_archive' => true,
         'supports' => array('title', 'editor'),
         'menu_icon' => 'dashicons-businessman',
-        'show_in_rest' => true,
+        'show_in_rest' => true
     );
     register_post_type('job_title', $args);
 }
@@ -147,6 +124,7 @@ function add_job_title_skills_field()
 }
 add_action('add_meta_boxes', 'add_job_title_skills_field');
 
+
 // Render custom fields for skills in Job Titles post type
 function render_job_title_skills_field($post)
 {
@@ -154,16 +132,28 @@ function render_job_title_skills_field($post)
     $taxonomy = 'job_title_skills';
     $terms = get_terms($taxonomy, array('hide_empty' => false));
 
-    echo '<label for="job_title_skills">Select Skills: <br> (Hold Crtl Key for multiple selecr)</label><br/>';
-    echo '<select name="job_title_skills[]" multiple>';
+    if (empty($terms)) {
+        echo '<label>There are no terms defined in this taxonomy. <a href="' . admin_url('edit-tags.php?taxonomy=' . $taxonomy.'&post_type=job_title') . '">Create one</a></label>';
+    } else {
+        echo '<label for="job_title_skills">Select Skills: <br> (Hold Crtl Key for multiple selecr)</label><br/>';
+        echo '<select name="job_title_skills[]" multiple>';
 
-    foreach ($terms as $term) {
-        $selected = in_array($term->term_id, $skills) ? 'selected' : '';
-        echo '<option value="' . $term->term_id . '" ' . $selected . '>' . $term->name . '</option>';
+        if (empty($skills)) {
+            foreach ($terms as $term) {
+                echo '<option value="' . $term->term_id . '">' . $term->name . '</option>';
+            }
+        } else {
+            foreach ($terms as $term) {
+                $selected = in_array($term->term_id, $skills) ? 'selected' : '';
+                echo '<option value="' . $term->term_id . '" ' . $selected . '>' . $term->name . '</option>';
+            }
+        }
+
+        echo '</select>';
     }
-
-    echo '</select>';
 }
+
+
 
 // Save custom fields for skills value for Job Titles as post meta
 function save_job_title_skills_field($post_id)
