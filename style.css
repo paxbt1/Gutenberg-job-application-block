@@ -1,0 +1,56 @@
+/* Table styles */
+.job-applications-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.job-applications-table thead {
+    background-color: #eee;
+    font-weight: bold;
+}
+
+.job-applications-table th,
+.job-applications-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+}
+
+.job-applications-table tbody tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+/* Responsive styles */
+@media screen and (max-width: 767px) {
+    .job-applications-table {
+        display: flex;
+        flex-direction: column;
+        overflow-x: auto;
+    }
+
+    .job-applications-table thead {
+        display: none;
+    }
+
+    .job-applications-table tbody tr {
+        display: flex;
+        flex-direction: column;
+        border: none;
+        margin-bottom: 20px;
+    }
+
+    .job-applications-table tbody tr td {
+        flex-basis: 100%;
+        padding: 10px;
+        text-align: center;
+    }
+
+    .job-applications-table tbody tr td:before {
+        content: attr(data-label);
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+        display: block;
+    }
+}

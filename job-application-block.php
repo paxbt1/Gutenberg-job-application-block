@@ -8,10 +8,6 @@
 function sgh_enqueue_job_application_block_js_file()
 {
     wp_enqueue_script('job-application-block', plugins_url('job-application-block.js', __FILE__), array('wp-blocks','wp-i18n','wp-editor'), true, true);
-
-    wp_localize_script('job-application-block', 'job_application_block_vars', array(
-            'nonce' => wp_create_nonce('jab-nonce'),
-        ));
 }
 
 add_action('enqueue_block_editor_assets', 'sgh_enqueue_job_application_block_js_file');
@@ -23,23 +19,26 @@ function sgh_enqueue_frontend_scripts()
 
     wp_localize_script('job-application-block-front', 'job_application_frontend_vars', array(
 
-            'ajax_url' => admin_url('admin-ajax.php')
+            'ajax_url' => admin_url('admin-ajax.php'),
+             'nonce' => wp_create_nonce('job-nonce')
         ));
+    wp_enqueue_style('style', plugins_url('style.css', __FILE__), array(), true);
 }
 add_action('wp_enqueue_scripts', 'sgh_enqueue_frontend_scripts');
 
 
 
 
-function sgh_saveData_callback($data)
+
+function sgh_saveData_callback()
 {
     // Check the nonce
     $nonce = isset($_POST['nonce_controller']) ? sanitize_text_field($_POST['nonce_controller']) : '';
-    if (! wp_verify_nonce($nonce, 'jab-nonce')) {
+    if (! wp_verify_nonce($nonce, 'job-nonce')) {
         // Nonce is not valid; return an error response
         $response = array(
             'success' => false,
-            'message' => 'Security check failed'.$nonce,
+            'message' => 'Security check failed',
 
         );
         wp_send_json($response);
@@ -64,11 +63,51 @@ function sgh_saveData_callback($data)
         return;
     }
 
+    $jobTitleName=get_post($jobTitle)->post_title;
     // Data is valid; process the request and return a success response
-    $response = array(
-        'success' => true,
-        'message' => $entryDate
-    );
+    $post_id = wp_insert_post(array(
+        'post_title' => $jobTitleName . ' - ' . $firstName . ' ' . $lastName,
+        'post_type' => 'job_applications',
+        'post_status' => 'publish',
+        'meta_input' => array(
+            'job_title_name'=>$jobTitleName,
+            'first_name'=>$firstName,
+            'last_name'=>$lastName,
+            'entry_date' => $entryDate,
+            'job_title_id'=>$jobTitle
+        ),
+    ));
+
+
+    if ($post_id) {
+        $term_ids = get_post_meta($jobTitle, '_job_title_skills', true);
+        $skills = '';
+
+        if (empty($term_ids) || !is_array($term_ids)) {
+            $skills = 'No Skills Needed, just be patient ;)';
+        } else {
+            foreach ($term_ids as $term_id) {
+                $term_obj = get_term(sanitize_text_field($term_id), 'job_title_skills');
+
+                if (!is_wp_error($term_obj) && !empty($term_obj->name)) {
+                    $skills .= sanitize_text_field($term_obj->name) . '<br>';
+                }
+            }
+        }
+
+        $response = array(
+            'success' => true,
+            'jobSkills' => $skills,
+            'message' => 'Data saved successfully',
+        );
+    } else {
+        $response = array(
+            'success' => false,
+            'message' => 'Error saving data',
+        );
+    }
+
+
     wp_send_json($response);
 }
 
@@ -164,3 +203,76 @@ function save_job_title_skills_field($post_id)
     }
 }
 add_action('save_post_job_title', 'save_job_title_skills_field');
+
+
+
+// register custom post type job_applications
+// for security reason it has to not show in Rest
+
+function sgh_register_custom_post_type_job_applications()
+{
+    $args = array(
+            'labels' => array(
+                'name' => __('Job Applications'),
+                'singular_name' => __('Job Application'),
+            ),
+            'public' => true,
+            'has_archive' => true,
+            'supports' => array('title', 'editor'),
+            'menu_icon' => 'dashicons-groups',
+            'show_in_rest' => false
+        );
+    register_post_type('job_applications', $args);
+}
+add_action('init', 'sgh_register_custom_post_type_job_applications');
+
+
+
+
+add_action('wp_ajax_nopriv_get_job_applications', 'prefix_get_job_applications');
+add_action('wp_ajax_get_job_applications', 'prefix_get_job_applications');
+
+function prefix_get_job_applications()
+{
+    // Verify the nonce
+    // check_ajax_referer('prefix_get_job_applications_nonce', 'security');
+
+    // Prepare the query arguments
+    $args = array(
+        'post_type' => 'job_applications',
+        'posts_per_page' => -1, // Get all posts
+    );
+
+    // Run the query
+    $query = new WP_Query($args);
+
+    // Get the posts
+    $posts = $query->get_posts();
+
+    // Prepare the response data
+    $data = array();
+    foreach ($posts as $post) {
+        $skills='';
+        $termIds=get_post_meta($post->ID, '_job_title_skills', true);
+        foreach ($termIds as $term_id) {
+            $term_obj = get_term($term_id, 'job_title_skills');
+
+            if (!is_wp_error($term_obj) && !empty($term_obj->name)) {
+                $skills .= $term_obj->name . '<br>';
+            }
+        }
+        $data[] = array(
+            'job_title_name'=>get_post_meta($post->ID, 'job_title_name', true),
+            'first_name'=>get_post_meta($post->ID, 'first_name', true),
+            'last_name'=>get_post_meta($post->ID, 'last_name', true),
+            'entry_date' => get_post_meta($post->ID, 'entry_date', true),
+            'job_title_id'=>get_post_meta($post->ID, 'job_title_id', true),
+            'skills'=>$skills
+            // Add any other data you want to include here
+        );
+    }
+
+    // Return the response
+    wp_send_json_success($data);
+    wp_die();
+}
