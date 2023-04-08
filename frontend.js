@@ -1,16 +1,20 @@
 jQuery(document).ready(function ($) {
-    $("#nonce-controller").val(job_application_frontend_vars.nonce)
+
+
+    //submit form send data with nonce to server
     $("#easyApply").submit(function (event) {
     event.preventDefault(); // prevent the default form submission behavior
 
     let formInputs = $(this).find("input ,select");
     let isValid = true;
 
+        
+        job_application_frontend_vars.get_job_titles_nonce
     formInputs.each(function() {
         let input = $(this);
         // Check if input is empty
         if (input.val() === "" || (input.is('select') && input.val() === input.find('option:first').val())) {
-        input.css("border-color", "red");
+        input.css("border-color", "#f44336");
         isValid = false;
         } else {
         input.css("border-color", "");
@@ -24,18 +28,17 @@ jQuery(document).ready(function ($) {
         let firstName = $("#firstName").val();
         let lastName = $("#lastName").val();
         let entryDate = $("#entryDate").val();
-        let nonce_controller = $("#nonce-controller").val();
 
         $.ajax({
             type: "POST",
             url: job_application_frontend_vars.ajax_url,
             data: {
-                action: "saveData",
+                action: "save_job_applications",
+                security:job_application_frontend_vars.save_job_applications_nonce,
                 jobTitle: jobTitleId,
                 firstName: firstName,
                 lastName: lastName,
                 entryDate: entryDate,
-                nonce_controller: nonce_controller,
             },
             success: function (response) {
                 // alert("Form submitted successfully!");
@@ -68,12 +71,15 @@ jQuery(document).ready(function ($) {
     }
     });
 
+//get all entries and fill table with it   
+    $('table.job-applications-table tbody').addClass("spinner");
     $.ajax({
         url: job_application_frontend_vars.ajax_url,
         type: 'POST',
         data: {
-            action: 'get_job_applications'
-        },
+            action: 'get_job_applications',
+            security:job_application_frontend_vars.get_job_applications_nonce
+                },
         success: function(response) {
             if (response.success) {
             const tableBody = $('.job-applications-table tbody');
@@ -92,11 +98,41 @@ jQuery(document).ready(function ($) {
             } else {
             alert(response.message);
             }
+           
         },
         error: function(xhr, textStatus, errorThrown) {
             alert('Error: ' + errorThrown);
+        },
+         complete: function() {
+         $('table.job-applications-table tbody').removeClass("spinner");
+        }
+        
+    });
+
+    //get All jobtitles and fill Select with it
+    $.ajax({
+        url: job_application_frontend_vars.ajax_url,
+        type: 'POST',
+        data: {
+            action: 'get_job_titles',
+            security: job_application_frontend_vars.get_job_titles_nonce
+        },
+        success: function(response) {
+            if (response.success) {
+                var select = $('#jobTitle');
+                select.html(response.data);
+            } else {
+                alert(response.message);
+            }
+        },
+        error: function(xhr, textStatus, errorThrown) {
+            alert('Error: ' + errorThrown);
+        },
+        complete: function() {
+            // Code to run after request is complete
         }
     });
+
 
 
 });

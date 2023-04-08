@@ -20,7 +20,10 @@ function sgh_enqueue_frontend_scripts()
     wp_localize_script('job-application-block-front', 'job_application_frontend_vars', array(
 
             'ajax_url' => admin_url('admin-ajax.php'),
-             'nonce' => wp_create_nonce('job-nonce')
+             'get_job_titles_nonce' => wp_create_nonce('get_job_titles_nonce'),
+             'get_job_applications_nonce' => wp_create_nonce('get_job_applications_nonce'),
+             'save_job_applications_nonce' => wp_create_nonce('save_job_applications_nonce'),
+
         ));
     wp_enqueue_style('style', plugins_url('style.css', __FILE__), array(), true);
 }
@@ -30,11 +33,10 @@ add_action('wp_enqueue_scripts', 'sgh_enqueue_frontend_scripts');
 
 
 
-function sgh_saveData_callback()
+function save_job_applications()
 {
     // Check the nonce
-    $nonce = isset($_POST['nonce_controller']) ? sanitize_text_field($_POST['nonce_controller']) : '';
-    if (! wp_verify_nonce($nonce, 'job-nonce')) {
+    if (! check_ajax_referer('save_job_applications_nonce', 'security')) {
         // Nonce is not valid; return an error response
         $response = array(
             'success' => false,
@@ -111,8 +113,8 @@ function sgh_saveData_callback()
     wp_send_json($response);
 }
 
-add_action('wp_ajax_nopriv_saveData', 'sgh_saveData_callback');
-add_action('wp_ajax_saveData', 'sgh_saveData_callback');
+add_action('wp_ajax_nopriv_save_job_applications', 'save_job_applications');
+add_action('wp_ajax_save_job_applications', 'save_job_applications');
 
 
 
@@ -230,13 +232,13 @@ add_action('init', 'sgh_register_custom_post_type_job_applications');
 
 
 
-add_action('wp_ajax_nopriv_get_job_applications', 'prefix_get_job_applications');
-add_action('wp_ajax_get_job_applications', 'prefix_get_job_applications');
+add_action('wp_ajax_nopriv_get_job_applications', 'sgh_get_job_applications');
+add_action('wp_ajax_get_job_applications', 'sgh_get_job_applications');
 
-function prefix_get_job_applications()
+function sgh_get_job_applications()
 {
     // Verify the nonce
-    // check_ajax_referer('prefix_get_job_applications_nonce', 'security');
+    check_ajax_referer('get_job_applications_nonce', 'security');
 
     // Prepare the query arguments
     $args = array(
@@ -278,3 +280,99 @@ function prefix_get_job_applications()
     wp_send_json_success($data);
     wp_die();
 }
+
+add_action('wp_ajax_nopriv_get_job_titles', 'sgh_get_job_titles');
+add_action('wp_ajax_get_job_titles', 'sgh_get_job_titles');
+
+
+function sgh_get_job_titles()
+{
+    check_ajax_referer('get_job_titles_nonce', 'security');
+
+    $args = array(
+        'post_type' => 'job_title',
+        'posts_per_page' => -1,
+        'orderby' => 'title',
+        'order' => 'ASC',
+    );
+
+    $query = new WP_Query($args);
+    $posts = $query->get_posts();
+
+    $options = '<option value="">Select a job title</option>';
+
+    foreach ($posts as $post) {
+        $options .= '<option value="' . esc_attr($post->ID) . '">' . esc_html($post->post_title) . '</option>';
+    }
+
+    wp_send_json_success($options);
+    wp_die();
+}
+
+
+
+
+//TODO adding pagination
+//
+//
+// function sgh_get_job_applications()
+// {
+//     // Verify the nonce
+//     // check_ajax_referer('sgh_get_job_applications_nonce', 'security');
+
+//     // Get the current page number
+//     $paged = isset($_POST['page']) ? intval($_POST['page']) : 1;
+
+//     // Prepare the query arguments
+//     $args = array(
+//         'post_type' => 'job_applications',
+//         'posts_per_page' => 10, // Set the number of posts per page
+//         'paged' => $paged, // Set the current page number
+//     );
+
+//     // Run the query
+//     $query = new WP_Query($args);
+
+//     // Get the posts
+//     $posts = $query->get_posts();
+
+//     // Prepare the response data
+//     $data = array();
+//     foreach ($posts as $post) {
+//         $job_title_id = get_post_meta($post->ID, 'job_title_id', true);
+//         $terms = get_post_meta($job_title_id, '_job_title_skills', true);
+
+//         $skills = '';
+//         if (!empty($terms) && !is_wp_error($terms)) {
+//             foreach ($terms as $term) {
+//                 // $skills.=$term;
+//                 $skills .= get_term($term, 'job_title_skills')->name . '<br>';
+//             }
+//         }
+
+//         $data[] = array(
+//             'job_title_name'=>get_post_meta($post->ID, 'job_title_name', true),
+//             'first_name'=>get_post_meta($post->ID, 'first_name', true),
+//             'last_name'=>get_post_meta($post->ID, 'last_name', true),
+//             'entry_date' => get_post_meta($post->ID, 'entry_date', true),
+//             'job_title_id'=>$job_title_id,
+//             'skills'=>$skills
+//         );
+//     }
+
+//     // Prepare the pagination links
+//     $pagination = paginate_links(array(
+//         'total' => $query->max_num_pages,
+//         'current' => $paged,
+//         'prev_next' => true,
+//         'prev_text' => __('&laquo; Previous'),
+//         'next_text' => __('Next &raquo;'),
+//     ));
+
+//     // Return the response with the pagination links
+//     wp_send_json_success(array(
+//         'data' => $data,
+//         'pagination' => $pagination,
+//     ));
+//     wp_die();
+// }
