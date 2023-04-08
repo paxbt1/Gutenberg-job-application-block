@@ -69,35 +69,34 @@ jQuery(document).ready(function ($) {
     });
 
     $.ajax({
-    url: job_application_frontend_vars.ajax_url, // Replace with your WordPress admin-ajax.php URL
-    type: 'POST',
-    data: {
-      action: 'get_job_applications', // Replace with your custom AJAX action name
-    },
-    success: function(response) {
-      if (response.success) {
-        // Clear the current table rows
-        // $('.job-applications-table tbody tr').remove();
-        // Loop through the job applications and add rows to the table
-        $.each(response.job_applications, function(i, job_application) {
-          var row = '<tr>' +
-                    '<td>' + job_application.job_title + '</td>' +
-                    '<td>' + job_application.first_name + '</td>' +
-                    '<td>' + job_application.last_name + '</td>' +
-                    '<td>' + job_application.entry_date + '</td>' +
-                    '<td>' + job_application.job_skills + '</td>' +
-                    '</tr>';
-          $('.job-applications-table tbody').append(row);
-        });
-      } else {
-        // Display an error message if job applications couldn't be retrieved
-        alert(response.message);
-      }
-    },
-    error: function(xhr, textStatus, errorThrown) {
-      // Display an error message if there was an AJAX error
-      alert('Error: ' + errorThrown);
-    }
-  });
+        url: job_application_frontend_vars.ajax_url,
+        type: 'POST',
+        data: {
+            action: 'get_job_applications'
+        },
+        success: function(response) {
+            if (response.success) {
+            const tableBody = $('.job-applications-table tbody');
+            tableBody.empty(); // Clear the current table rows
+
+            $.each(response.data, function(i, job_application) {
+                const row = '<tr>' +
+                        '<td>' + job_application.job_title_name + '</td>' +
+                        '<td>' + job_application.first_name + '</td>' +
+                        '<td>' + job_application.last_name + '</td>' +
+                        '<td>' + job_application.entry_date + '</td>' +
+                        '<td>' + job_application.skills + '</td>' +
+                        '</tr>';
+                tableBody.append(row);
+            });
+            } else {
+            alert(response.message);
+            }
+        },
+        error: function(xhr, textStatus, errorThrown) {
+            alert('Error: ' + errorThrown);
+        }
+    });
+
 
 });

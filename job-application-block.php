@@ -168,11 +168,12 @@ add_action('add_meta_boxes', 'add_job_title_skills_field');
 function render_job_title_skills_field($post)
 {
     $skills = get_post_meta($post->ID, '_job_title_skills', true);
-    $taxonomy = 'job_title_skills';
-    $terms = get_terms($taxonomy, array('hide_empty' => false));
+
+    //'hide_empty' => false Retrieve all terms, including those that have no associated posts
+    $terms = get_terms('job_title_skills', array('hide_empty' => false));
 
     if (empty($terms)) {
-        echo '<label>There are no terms defined in this taxonomy. <a href="' . admin_url('edit-tags.php?taxonomy=' . $taxonomy.'&post_type=job_title') . '">Create one</a></label>';
+        echo '<label>There are no terms defined in this taxonomy. <a href="' . admin_url('edit-tags.php?taxonomy=job_title_skills&post_type=job_title') . '">Create one</a></label>';
     } else {
         echo '<label for="job_title_skills">Select Skills: <br> (Hold Crtl Key for multiple selecr)</label><br/>';
         echo '<select name="job_title_skills[]" multiple>';
@@ -252,23 +253,24 @@ function prefix_get_job_applications()
     // Prepare the response data
     $data = array();
     foreach ($posts as $post) {
-        $skills='';
-        $termIds=get_post_meta($post->ID, '_job_title_skills', true);
-        foreach ($termIds as $term_id) {
-            $term_obj = get_term($term_id, 'job_title_skills');
+        $job_title_id = get_post_meta($post->ID, 'job_title_id', true);
+        $terms = get_post_meta($job_title_id, '_job_title_skills', true);
 
-            if (!is_wp_error($term_obj) && !empty($term_obj->name)) {
-                $skills .= $term_obj->name . '<br>';
+        $skills = '';
+        if (!empty($terms) && !is_wp_error($terms)) {
+            foreach ($terms as $term) {
+                // $skills.=$term;
+                $skills .= get_term($term, 'job_title_skills')->name . '<br>';
             }
         }
+
         $data[] = array(
             'job_title_name'=>get_post_meta($post->ID, 'job_title_name', true),
             'first_name'=>get_post_meta($post->ID, 'first_name', true),
             'last_name'=>get_post_meta($post->ID, 'last_name', true),
             'entry_date' => get_post_meta($post->ID, 'entry_date', true),
-            'job_title_id'=>get_post_meta($post->ID, 'job_title_id', true),
+            'job_title_id'=>$job_title_id,
             'skills'=>$skills
-            // Add any other data you want to include here
         );
     }
 
