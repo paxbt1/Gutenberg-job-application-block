@@ -81,3 +81,10 @@ button#submit-btn {
         transform: rotate(360deg);
     }
 }
+
+.filter-container {
+    display: flex;
+    height: 30px;
+    justify-content: flex-end;
+    align-items: center;
+}

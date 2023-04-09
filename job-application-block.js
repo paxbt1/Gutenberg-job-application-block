@@ -3,18 +3,12 @@ wp.blocks.registerBlockType('jobapplicationablock/job-application-block', {
     icon: "smiley",
     category: "design",
     edit: function(props) {
-        const jobTitles = wp.data.select('core').getEntityRecords('postType', 'job_title');
-        const optionElements = jobTitles ? jobTitles.map((jobTitle) => {
-            return React.createElement("option", { value: jobTitle.id }, jobTitle.title.rendered);
-        }) : null;
-
-
-        return
-        // TODO
-        // Private mode setting could be add here
-        null
-            
-            ;
+        
+        return (
+            React.createElement("div", null,
+                React.createElement("p", null, "Here it is The job application form with Gutenberg.")
+            )
+        );
     },
 
     save: function(props) {
@@ -30,11 +24,15 @@ wp.blocks.registerBlockType('jobapplicationablock/job-application-block', {
                     React.createElement("input", { type: "date", id: "entryDate", name: "entryDate", placeholder: "Entry Date" }),
                     ),
                     React.createElement("button", { type: "submit", id: "submit-btn" }, "Submit"),
-                    
+                ),
                     React.createElement("div", null, 
                     React.createElement("table", {
                     class: "job-applications-table"
                     }, 
+                        React.createElement("div", { class: "filter-container" },
+                        React.createElement("select", {id: "jobTitleFilterSelect", name: "jobTitle", placeholder: "Job Title" },
+                        React.createElement("option", { value: "" }, "Select Filter"))
+                    ),
                     React.createElement("thead", null, 
                     React.createElement("tr", null, 
                     React.createElement("th", null, "Job Title"), 
@@ -44,7 +42,7 @@ wp.blocks.registerBlockType('jobapplicationablock/job-application-block', {
                     React.createElement("th", null, "Job Skills"))), 
                     React.createElement("tbody", null)))
 
-                                    )
+                                    
             ));
     }
 

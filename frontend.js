@@ -33,7 +33,7 @@ jQuery(document).ready(function ($) {
             type: "POST",
             url: job_application_frontend_vars.ajax_url,
             data: {
-                action: "save_job_applications",
+                action: job_application_frontend_vars.prefix+"save_job_applications",
                 security:job_application_frontend_vars.save_job_applications_nonce,
                 jobTitle: jobTitleId,
                 firstName: firstName,
@@ -77,7 +77,7 @@ jQuery(document).ready(function ($) {
         url: job_application_frontend_vars.ajax_url,
         type: 'POST',
         data: {
-            action: 'get_job_applications',
+            action: job_application_frontend_vars.prefix+'get_job_applications',
             security:job_application_frontend_vars.get_job_applications_nonce
                 },
         success: function(response) {
@@ -114,13 +114,14 @@ jQuery(document).ready(function ($) {
         url: job_application_frontend_vars.ajax_url,
         type: 'POST',
         data: {
-            action: 'get_job_titles',
+            action: job_application_frontend_vars.prefix+'get_job_titles',
             security: job_application_frontend_vars.get_job_titles_nonce
         },
         success: function(response) {
             if (response.success) {
-                var select = $('#jobTitle');
-                select.html(response.data);
+                
+                $('#jobTitle').html(response.data);
+                $("#jobTitleFilterSelect").html(response.data);
             } else {
                 alert(response.message);
             }
