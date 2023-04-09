@@ -134,6 +134,27 @@ jQuery(document).ready(function ($) {
         }
     });
 
+    
+    $('#jobTitleFilterSelect').on('change', function () {
+        console.log($(this).val());
+        var jobTitleId = $(this).val();
+        $.ajax({
+        type: 'POST',
+        dataType: 'JSON',
+        url: job_application_frontend_vars.ajax_url,
+        data: {
+            action: job_application_frontend_vars.prefix + 'get_job_applications_filter',
+             security: job_application_frontend_vars.get_job_applications_filter_nonce,
+            job_title_id: jobTitleId
+        },
+            success: function (response) {
+                console.log(response);
+            // handle the response here
+        }
+        });
+    });
+    
+
 
 
 });

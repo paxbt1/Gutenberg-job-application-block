@@ -25,6 +25,11 @@ class Job_Application_Block_Plugin
         add_action('wp_ajax_' . $this->prefix . '_get_job_applications', array($this, 'get_job_applications'));
         add_action('wp_ajax_nopriv_' . $this->prefix . '_get_job_titles', array($this, 'get_job_titles'));
         add_action('wp_ajax_' . $this->prefix . '_get_job_titles', array($this, 'get_job_titles'));
+
+        add_action('wp_ajax_' . $this->prefix . '_get_job_applications_filter', array($this, 'get_job_applications_filter'));
+        add_action('wp_ajax_nopriv_' . $this->prefix . '_get_job_applications_filter', array($this, 'get_job_applications_filter'));
+        
+
     }
 
     public function enqueue_editor_assets()
@@ -44,6 +49,7 @@ class Job_Application_Block_Plugin
                 'get_job_titles_nonce' => wp_create_nonce('get_job_titles_nonce'),
                 'get_job_applications_nonce' => wp_create_nonce('get_job_applications_nonce'),
                 'save_job_applications_nonce' => wp_create_nonce('save_job_applications_nonce'),
+                'get_job_applications_filter_nonce' => wp_create_nonce('get_job_applications_filter_nonce'),
                 'prefix'=>$this->prefix.'_'
             )
         );
@@ -291,6 +297,7 @@ public function get_job_applications()
 public function get_job_titles()
 {
     check_ajax_referer('get_job_titles_nonce', 'security');
+    
 
     $args = array(
         'post_type' => 'job_title',
@@ -311,6 +318,43 @@ public function get_job_titles()
     wp_send_json_success($options);
     wp_die();
 }
+
+
+
+
+public function get_job_applications_filter()
+{
+    check_ajax_referer('get_job_applications_filter_nonce', 'security');
+
+    $jobTitleId = $_POST['job_title_id'];
+    $args = array(
+      'post_type' => 'job_applications',
+      'meta_query' => array(
+        array(
+          'key' => 'job_title_id',
+          'value' => $jobTitleId,
+          'compare' => '=',
+        ),
+      ),
+    );
+    $query = new WP_Query($args);
+    $posts = array();
+    if ($query->have_posts()) {
+        while ($query->have_posts()) {
+            $query->the_post();
+            $post = array(
+              'id' => get_the_ID(),
+              'title' => get_the_title(),
+              // add any other post data you need here
+            );
+            array_push($posts, $post);
+        }
+    }
+    wp_reset_postdata();
+    echo json_encode($posts);
+    wp_die();
+}
+
 }
 
 new Job_Application_Block_Plugin();
