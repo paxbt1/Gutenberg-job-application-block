@@ -39,6 +39,26 @@ class Job_Application_Block_Plugin
     public function enqueue_editor_assets()
     {
         wp_enqueue_script('job-application-block', plugins_url('job-application-block.js', __FILE__), array('wp-blocks', 'wp-i18n', 'wp-editor'), true, true);
+
+        $args = array(
+                'post_type' => 'job_title',
+                'post_status' => 'publish',
+                'posts_per_page' => 1,
+            );
+        $query = new WP_Query($args);
+
+        $terms = get_terms('job_title_skills', array('hide_empty' => false));
+        $init_result=true;
+        if (empty($terms) || !$query->have_posts()) {
+            $init_result=false;
+        }
+        wp_localize_script(
+            'job-application-block',
+            'job_application_block_vars',
+            array(
+                'init_detect' => $init_result,
+            )
+        );
     }
 
     /**
@@ -263,7 +283,7 @@ class Job_Application_Block_Plugin
 
     /**
      * save_job_title_skills_field
-     * Save custom fields for skills value for Job Titles as post meta    
+     * Save custom fields for skills value for Job Titles as post meta
      *
      * @param  mixed $post_id
      * @return void
@@ -311,13 +331,11 @@ class Job_Application_Block_Plugin
      */
     public function get_job_applications()
     {
-
         // Check the nonce
         // internal function to check nonce
         $this->nonce_checker('get_job_applications_nonce');
 
         if (isset($_POST['job_title_id']) && $_POST['job_title_id'] !== '-1') {
-
             $args = array(
                 'post_type' => 'job_applications',
                 'meta_query' => array(
@@ -329,7 +347,6 @@ class Job_Application_Block_Plugin
                 ),
             );
         } else {
-
             // Prepare the query arguments
             $args = array(
                 'post_type' => 'job_applications',

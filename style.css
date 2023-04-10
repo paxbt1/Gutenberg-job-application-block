@@ -57,6 +57,7 @@
 .inputs-container {
     display: flex;
     justify-content: space-between;
+    column-gap: 15px;
 }
 
 button#submit-btn {
@@ -84,11 +85,22 @@ button#submit-btn {
 
 .filter-container {
     display: flex;
-    height: 30px;
+    height: 50px;
     justify-content: flex-end;
     align-items: center;
 }
 
-select#jobTitleFilterSelect {
-    margin-left: 10px;
+#filter-label {
+    font-size: 16px;
+    padding-right: 10px;
+}
+#jobTitleFilterSelect {
+    width: 25%;
+}
+.form-container {
+    display: flex;
+    width: 75%;
+    flex-direction: column;
+    align-items: stretch;
+    margin: auto;
 }
