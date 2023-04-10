@@ -1,4 +1,5 @@
 /* Table styles */
+
 .job-applications-table {
     width: 100%;
     border-collapse: collapse;
@@ -21,31 +22,29 @@
     background-color: #f9f9f9;
 }
 
+
 /* Responsive styles */
+
 @media screen and (max-width: 767px) {
     .job-applications-table {
         display: flex;
         flex-direction: column;
         overflow-x: auto;
     }
-
     .job-applications-table thead {
         display: none;
     }
-
     .job-applications-table tbody tr {
         display: flex;
         flex-direction: column;
         border: none;
         margin-bottom: 20px;
     }
-
     .job-applications-table tbody tr td {
         flex-basis: 100%;
         padding: 10px;
         text-align: center;
     }
-
     .job-applications-table tbody tr td:before {
         content: attr(data-label);
         font-weight: bold;
@@ -54,10 +53,12 @@
         display: block;
     }
 }
+
 .inputs-container {
     display: flex;
     justify-content: space-between;
 }
+
 button#submit-btn {
     margin: 5px auto;
 }
@@ -70,9 +71,8 @@ button#submit-btn {
     border-radius: 50%;
     border: 0.2em solid rgba(0, 0, 0, 0.2);
     border-top-color: #E91E63;
-    position: sticky;
+    position: absolute;
     left: 50%;
-    top: 50%;
     animation: spin 1s ease-in-out infinite;
 }
 
@@ -87,4 +87,8 @@ button#submit-btn {
     height: 30px;
     justify-content: flex-end;
     align-items: center;
+}
+
+select#jobTitleFilterSelect {
+    margin-left: 10px;
 }
