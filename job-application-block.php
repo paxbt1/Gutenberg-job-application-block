@@ -41,7 +41,7 @@ class Job_Application_Block_Plugin
         wp_enqueue_script('job-application-block', plugins_url('job-application-block.js', __FILE__), array('wp-blocks', 'wp-i18n', 'wp-editor'), true, true);
 
         $args = array(
-                'post_type' => 'job_title',
+                'post_type' => 'job_applications',
                 'post_status' => 'publish',
                 'posts_per_page' => 1,
             );
