@@ -41,16 +41,16 @@ class Job_Application_Block_Plugin
         wp_enqueue_script('job-application-block', plugins_url('job-application-block.js', __FILE__), array('wp-blocks', 'wp-i18n', 'wp-editor'), true, true);
 
         $args = array(
-                'post_type' => 'job_applications',
-                'post_status' => 'publish',
-                'posts_per_page' => 1,
-            );
+            'post_type' => 'job_applications',
+            'post_status' => 'publish',
+            'posts_per_page' => 1,
+        );
         $query = new WP_Query($args);
 
         $terms = get_terms('job_title_skills', array('hide_empty' => false));
-        $init_result=true;
+        $init_result = true;
         if (empty($terms) || !$query->have_posts()) {
-            $init_result=false;
+            $init_result = false;
         }
         wp_localize_script(
             'job-application-block',
@@ -334,6 +334,7 @@ class Job_Application_Block_Plugin
         // Check the nonce
         // internal function to check nonce
         $this->nonce_checker('get_job_applications_nonce');
+        $paged = isset($_POST['page']) ? intval($_POST['page']) : 1;
 
         if (isset($_POST['job_title_id']) && $_POST['job_title_id'] !== '-1') {
             $args = array(
@@ -345,12 +346,16 @@ class Job_Application_Block_Plugin
                         'compare' => '=',
                     ),
                 ),
+                'paged' => $paged,
+                'posts_per_page' => 2
             );
         } else {
             // Prepare the query arguments
             $args = array(
                 'post_type' => 'job_applications',
                 'posts_per_page' => -1, // Get all posts
+                'paged' => $paged,
+                'posts_per_page' => 2
             );
         }
 
@@ -359,6 +364,17 @@ class Job_Application_Block_Plugin
 
         // Get the posts
         $posts = $query->get_posts();
+
+        // Prepare the pagination links
+        $pagination = paginate_links(array(
+            'base' => 'javascript:void(0);',
+            'total' => $query->max_num_pages,
+            'current' => $paged,
+            'prev_next' => false,
+            'prev_text' => __('&laquo; Previous'),
+            'next_text' => __('Next &raquo;'),
+            'disable' => true
+        ));
 
         // Prepare the response data
         $data = array();
@@ -385,7 +401,12 @@ class Job_Application_Block_Plugin
         }
 
 
-        wp_send_json_success($data);
+        // Return the response with the pagination links
+        wp_send_json_success(array(
+            'rows' => $data,
+            'pagination' => $pagination,
+        ));
+        // wp_send_json_success($data);
         wp_die();
     }
 
@@ -410,7 +431,11 @@ class Job_Application_Block_Plugin
 
         $query = new WP_Query($args);
         $posts = $query->get_posts();
-
+        //In case of deleting all job titles
+        if (empty($posts)) {
+            wp_send_json_error('No job titles found.You need to define the job title and skills first');
+            wp_die();
+        }
         $options = '';
 
         foreach ($posts as $post) {

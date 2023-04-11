@@ -94,13 +94,32 @@ button#submit-btn {
     font-size: 16px;
     padding-right: 10px;
 }
+
 #jobTitleFilterSelect {
-    width: 25%;
+    width: 10vw;
 }
+
 .form-container {
     display: flex;
     width: 75%;
     flex-direction: column;
     align-items: stretch;
     margin: auto;
+}
+
+@media(max-width:470px) {
+    .inputs-container {
+        display: flex;
+        row-gap: 10px;
+        flex-direction: column;
+    }
+    #jobTitleFilterSelect {
+        width: 50%;
+    }
+    .filter-container {
+        display: flex;
+        height: 50px;
+        align-items: center;
+        justify-content: space-between;
+    }
 }

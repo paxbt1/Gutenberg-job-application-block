@@ -1,5 +1,69 @@
 jQuery(document).ready(function($) {
 
+    //get All jobtitles and fill Select with it
+    $.ajax({
+        url: job_application_frontend_vars.ajax_url,
+        type: 'POST',
+        data: {
+            action: job_application_frontend_vars.prefix + 'get_job_titles',
+            security: job_application_frontend_vars.get_job_titles_nonce
+        },
+        success: function(response) {
+            if (response.success) {
+
+                $('#jobTitle').append(response.data);
+                $("#jobTitleFilterSelect").append(response.data);
+            } else {
+                alert(response.data);
+            }
+        },
+        error: function(xhr, textStatus, errorThrown) {
+            alert('Error: ' + errorThrown);
+        },
+        complete: function() {
+            // Code to run after request is complete
+        }
+    });
+
+    $('table.job-applications-table tbody').addClass("spinner");
+    //get all entries and fill table with it   
+    $.ajax({
+        url: job_application_frontend_vars.ajax_url,
+        type: 'POST',
+        data: {
+            action: job_application_frontend_vars.prefix + 'get_job_applications',
+            security: job_application_frontend_vars.get_job_applications_nonce
+        },
+        success: function(response) {
+            if (response.success) {
+                const tableBody = $('.job-applications-table tbody');
+                tableBody.empty(); // Clear the current table rows
+
+                $.each(response.data.rows, function(i, job_application) {
+                    const row = '<tr>' +
+                        '<td>' + job_application.job_title_name + '</td>' +
+                        '<td>' + job_application.first_name + '</td>' +
+                        '<td>' + job_application.last_name + '</td>' +
+                        '<td>' + job_application.entry_date + '</td>' +
+                        '<td>' + job_application.skills + '</td>' +
+                        '</tr>';
+                    tableBody.append(row);
+                });
+                $('.pagination-container').html(response.data.pagination);
+            } else {
+                alert(response.message);
+            }
+
+        },
+        error: function(xhr, textStatus, errorThrown) {
+            alert('Error: ' + errorThrown);
+        },
+        complete: function() {
+            $('table.job-applications-table tbody').removeClass("spinner");
+        }
+
+    });
+
 
     //submit form send data with nonce to server
     $("#easyApply").submit(function(event) {
@@ -72,68 +136,8 @@ jQuery(document).ready(function($) {
         }
     });
 
-    //get all entries and fill table with it   
-    $('table.job-applications-table tbody').addClass("spinner");
-    $.ajax({
-        url: job_application_frontend_vars.ajax_url,
-        type: 'POST',
-        data: {
-            action: job_application_frontend_vars.prefix + 'get_job_applications',
-            security: job_application_frontend_vars.get_job_applications_nonce
-        },
-        success: function(response) {
-            if (response.success) {
-                const tableBody = $('.job-applications-table tbody');
-                tableBody.empty(); // Clear the current table rows
 
-                $.each(response.data, function(i, job_application) {
-                    const row = '<tr>' +
-                        '<td>' + job_application.job_title_name + '</td>' +
-                        '<td>' + job_application.first_name + '</td>' +
-                        '<td>' + job_application.last_name + '</td>' +
-                        '<td>' + job_application.entry_date + '</td>' +
-                        '<td>' + job_application.skills + '</td>' +
-                        '</tr>';
-                    tableBody.append(row);
-                });
-            } else {
-                alert(response.message);
-            }
 
-        },
-        error: function(xhr, textStatus, errorThrown) {
-            alert('Error: ' + errorThrown);
-        },
-        complete: function() {
-            $('table.job-applications-table tbody').removeClass("spinner");
-        }
-
-    });
-
-    //get All jobtitles and fill Select with it
-    $.ajax({
-        url: job_application_frontend_vars.ajax_url,
-        type: 'POST',
-        data: {
-            action: job_application_frontend_vars.prefix + 'get_job_titles',
-            security: job_application_frontend_vars.get_job_titles_nonce
-        },
-        success: function(response) {
-            if (response.success) {
-
-                $('#jobTitle').append(response.data);
-                $("#jobTitleFilterSelect").append(response.data);
-            } else {
-                alert(response.message);
-            }
-        },
-        error: function(xhr, textStatus, errorThrown) {
-            alert('Error: ' + errorThrown);
-        },
-        complete: function() {
-            // Code to run after request is complete
-        }
-    });
 
 
     $('#jobTitleFilterSelect').on('change', function() {
@@ -146,14 +150,14 @@ jQuery(document).ready(function($) {
             data: {
                 action: job_application_frontend_vars.prefix + 'get_job_applications',
                 security: job_application_frontend_vars.get_job_applications_nonce,
-                job_title_id: jobTitleId
+                job_title_id: jobTitleId,
+                // page:
             },
             success: function(response) {
                 if (response.success) {
                     const tableBody = $('.job-applications-table tbody');
                     tableBody.empty(); // Clear the current table rows
-
-                    $.each(response.data, function(i, job_application) {
+                    $.each(response.data.rows, function(i, job_application) {
                         const row = '<tr>' +
                             '<td>' + job_application.job_title_name + '</td>' +
                             '<td>' + job_application.first_name + '</td>' +
@@ -163,6 +167,7 @@ jQuery(document).ready(function($) {
                             '</tr>';
                         tableBody.append(row);
                     });
+                    $('.pagination-container').html(response.data.pagination);
                 } else {
                     alert(response.message);
                 }
@@ -179,5 +184,48 @@ jQuery(document).ready(function($) {
 
 
 
+    // Add event listener to pagination links
+    $(document).on('click', 'a.page-numbers', function(event) {
+        event.preventDefault(); // Prevent default link behavior
+        var page = $(this).text();
+        console.log('page', page);
+        $.ajax({
+            type: 'POST',
+            dataType: 'JSON',
+            url: job_application_frontend_vars.ajax_url,
+            data: {
+                action: job_application_frontend_vars.prefix + 'get_job_applications',
+                security: job_application_frontend_vars.get_job_applications_nonce,
+                page: page,
+                // page:
+            },
+            success: function(response) {
+                if (response.success) {
+                    const tableBody = $('.job-applications-table tbody');
+                    tableBody.empty(); // Clear the current table rows
+                    $.each(response.data.rows, function(i, job_application) {
+                        const row = '<tr>' +
+                            '<td>' + job_application.job_title_name + '</td>' +
+                            '<td>' + job_application.first_name + '</td>' +
+                            '<td>' + job_application.last_name + '</td>' +
+                            '<td>' + job_application.entry_date + '</td>' +
+                            '<td>' + job_application.skills + '</td>' +
+                            '</tr>';
+                        tableBody.append(row);
+                    });
+                    $('.pagination-container').html(response.data.pagination);
+                } else {
+                    alert(response.message);
+                }
+
+            },
+            error: function(xhr, textStatus, errorThrown) {
+                alert('Error: ' + errorThrown);
+            },
+            complete: function() {
+                $('table.job-applications-table tbody').removeClass("spinner");
+            }
+        });
+    });
 
 });

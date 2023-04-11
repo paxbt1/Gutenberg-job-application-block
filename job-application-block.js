@@ -10,9 +10,9 @@ wp.blocks.registerBlockType('jobapplicationablock/job-application-block', {
                     React.createElement("p", null, "Cannot create block. You need to define the job title and skills first.")
                 )
             );
-                
+
         } else {
-            
+
             return (
                 React.createElement("div", null,
                     React.createElement("p", null, "Here it is The job application form with Gutenberg.")
@@ -21,12 +21,13 @@ wp.blocks.registerBlockType('jobapplicationablock/job-application-block', {
         }
     },
 
-    save: function (props) {
+    save: function(props) {
         if (!job_application_block_vars.init_detect) {
-            return  null ;
+            return null;
         } else {
             return (
                 React.createElement("div", { class: "form-container" },
+
                     React.createElement("form", { id: "easyApply" },
                         React.createElement("div", { class: "inputs-container" },
                             React.createElement("select", { id: "jobTitle", name: "jobTitle", placeholder: "Job Title" },
@@ -37,10 +38,11 @@ wp.blocks.registerBlockType('jobapplicationablock/job-application-block', {
                         ),
                         React.createElement("button", { type: "submit", id: "submit-btn" }, "Submit"),
                     ),
+
                     React.createElement("div", null,
                         React.createElement("table", {
-                            class: "job-applications-table"
-                        },
+                                class: "job-applications-table"
+                            },
                             React.createElement("div", { class: "filter-container" },
                                 React.createElement('label', { id: "filter-label", for: 'jobTitleFilter' }, "Select Filter:"),
                                 React.createElement("select", { id: "jobTitleFilterSelect", name: "jobTitleFilter", placeholder: "Job Title" },
@@ -52,10 +54,13 @@ wp.blocks.registerBlockType('jobapplicationablock/job-application-block', {
                                     React.createElement("th", null, "Last Name"),
                                     React.createElement("th", null, "Entry Date"),
                                     React.createElement("th", null, "Job Skills"))),
-                            React.createElement("tbody", null)))
+                            React.createElement("tbody", null))
+                    ),
+                    React.createElement("div", { class: "pagination-container" })
 
 
-                ));
+                )
+            );
         }
     }
 })
