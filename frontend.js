@@ -1,5 +1,6 @@
 jQuery(document).ready(function($) {
 
+    let paginationLength = $('#paginationLength').val();
     //get All jobtitles and fill Select with it
     $.ajax({
         url: job_application_frontend_vars.ajax_url,
@@ -24,6 +25,29 @@ jQuery(document).ready(function($) {
             // Code to run after request is complete
         }
     });
+    
+
+    $.ajax({
+        url: job_application_frontend_vars.ajax_url,
+        type: 'POST',
+        data: {
+            action: job_application_frontend_vars.prefix + 'get_skills',
+            security: job_application_frontend_vars.get_skills_nonce
+        },
+        success: function(response) {
+            if (response.success) {
+                $("#skillFilterSelect").append(response.data);
+            } else {
+                alert(response.data);
+            }
+        },
+        error: function(xhr, textStatus, errorThrown) {
+            alert('Error: ' + errorThrown);
+        },
+        complete: function() {
+            // Code to run after request is complete
+        }
+    });
 
     $('table.job-applications-table tbody').addClass("spinner");
     //get all entries and fill table with it   
@@ -32,7 +56,10 @@ jQuery(document).ready(function($) {
         type: 'POST',
         data: {
             action: job_application_frontend_vars.prefix + 'get_job_applications',
-            security: job_application_frontend_vars.get_job_applications_nonce
+            security: job_application_frontend_vars.get_job_applications_nonce,
+            filter: 'nofilter',
+            page: 1,
+            paginationLength:paginationLength
         },
         success: function(response) {
             if (response.success) {
@@ -105,8 +132,6 @@ jQuery(document).ready(function($) {
                     entryDate: entryDate,
                 },
                 success: function(response) {
-                    // alert("Form submitted successfully!");
-                    console.log(response);
 
                     // Check if the response was successful
                     if (response.success) {
@@ -117,7 +142,6 @@ jQuery(document).ready(function($) {
                         let newRow = '<tr><td>' + jobTitleName + '</td><td>' + firstName + '</td><td>' + lastName + '</td><td>' + entryDate + '</td><td>' + jobSkills + '</td></tr>';
 
                         // Append the new row to the table body
-                        console.log(newRow);
                         $('.job-applications-table tbody').append(newRow);
 
                         // Clear the form inputs
@@ -140,8 +164,10 @@ jQuery(document).ready(function($) {
 
 
 
+    // fill table filter by Job title
     $('#jobTitleFilterSelect').on('change', function() {
         $('table.job-applications-table tbody').addClass("spinner");
+        $("#skillFilterSelect").prop('selectedIndex',0)
         var jobTitleId = $(this).val();
         $.ajax({
             type: 'POST',
@@ -150,8 +176,56 @@ jQuery(document).ready(function($) {
             data: {
                 action: job_application_frontend_vars.prefix + 'get_job_applications',
                 security: job_application_frontend_vars.get_job_applications_nonce,
-                job_title_id: jobTitleId,
-                // page:
+                filter : 'jobTitleFilterSelect',
+                value:jobTitleId,
+                page: 1,
+                paginationLength:paginationLength
+            },
+            success: function(response) {
+                if (response.success) {
+                    const tableBody = $('.job-applications-table tbody');
+                    tableBody.empty(); // Clear the current table rows
+                    $.each(response.data.rows, function(i, job_application) {
+                        const row = '<tr>' +
+                            '<td>' + job_application.job_title_name + '</td>' +
+                            '<td>' + job_application.first_name + '</td>' +
+                            '<td>' + job_application.last_name + '</td>' +
+                            '<td>' + job_application.entry_date + '</td>' +
+                            '<td>' + job_application.skills + '</td>' +
+                            '</tr>';
+                        tableBody.append(row);
+                    });
+                    $('.pagination-container').html(response.data.pagination);
+                } else {
+                    alert(response.message);
+                }
+
+            },
+            error: function(xhr, textStatus, errorThrown) {
+                alert('Error: ' + errorThrown);
+            },
+            complete: function() {
+                $('table.job-applications-table tbody').removeClass("spinner");
+            }
+        });
+    });
+
+    // fill table filter by skilss
+    $('#skillFilterSelect').on('change', function() {
+        $('table.job-applications-table tbody').addClass("spinner");
+        $("#jobTitleFilterSelect").prop('selectedIndex', 0);
+        var jobTitleId = $(this).val();
+        $.ajax({
+            type: 'POST',
+            dataType: 'JSON',
+            url: job_application_frontend_vars.ajax_url,
+            data: {
+                action: job_application_frontend_vars.prefix + 'get_job_applications',
+                security: job_application_frontend_vars.get_job_applications_nonce,
+                filter:'skillFilterSelect',
+                value: jobTitleId,
+                page: 1,
+                paginationLength:paginationLength
             },
             success: function(response) {
                 if (response.success) {
@@ -188,7 +262,18 @@ jQuery(document).ready(function($) {
     $(document).on('click', 'a.page-numbers', function(event) {
         event.preventDefault(); // Prevent default link behavior
         var page = $(this).text();
-        console.log('page', page);
+        let value = -1;
+        let filter='nofilter';
+        if ($('#skillFilterSelect').val() === $('#jobTitleFilterSelect').val()) {
+            value = -1;
+            filter='nofilter';
+        } else if ($('#skillFilterSelect').val() > $('#jobTitleFilterSelect').val()) {
+            filter = 'skillFilterSelect';
+            value = $('#skillFilterSelect').val();
+        } else{
+            filter = 'jobTitleFilterSelect';
+            value = $('#jobTitleFilterSelect').val();
+            }
         $.ajax({
             type: 'POST',
             dataType: 'JSON',
@@ -196,8 +281,10 @@ jQuery(document).ready(function($) {
             data: {
                 action: job_application_frontend_vars.prefix + 'get_job_applications',
                 security: job_application_frontend_vars.get_job_applications_nonce,
+                filter: filter,
+                value: value,
                 page: page,
-                // page:
+                paginationLength:paginationLength
             },
             success: function(response) {
                 if (response.success) {

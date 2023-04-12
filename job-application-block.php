@@ -2,9 +2,14 @@
 
 /**
  * Plugin name: Job Application Block
- * Plugin description: Custom Gutenberg Block that contains a table of employees that applied for a job and an application form.
- * Author name: Saeed Ghourbanian ;)
+ * description: Custom Gutenberg Block that contains a table of employees that applied for a job and an application form.
+ * Author: Saeed Ghourbanian ;)
+ * Author URI: https://www.linkedin.com/in/saeed-ghourbanian/
+ * version: 1.0
  */
+if(!ABSPATH) {
+    return;
+}
 
 class Job_Application_Block_Plugin
 {
@@ -18,8 +23,10 @@ class Job_Application_Block_Plugin
     {
         add_action('enqueue_block_editor_assets', array($this, 'enqueue_editor_assets'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
+
         add_action('init', array($this, 'create_job_title_post_type'));
         add_action('init', array($this, 'create_job_title_skills_taxonomy'));
+
         add_action('init', array($this, 'create_job_applications_post_type'));
         add_action('save_post_job_title', array($this, 'save_job_title_skills_field'));
         add_action('add_meta_boxes', array($this, 'add_job_title_skills_field'));
@@ -30,7 +37,37 @@ class Job_Application_Block_Plugin
         add_action('wp_ajax_' . $this->prefix . '_get_job_applications', array($this, 'get_job_applications'));
         add_action('wp_ajax_nopriv_' . $this->prefix . '_get_job_titles', array($this, 'get_job_titles'));
         add_action('wp_ajax_' . $this->prefix . '_get_job_titles', array($this, 'get_job_titles'));
+        add_action('wp_ajax_nopriv_' . $this->prefix . '_get_skills', array($this, 'get_skills'));
+        add_action('wp_ajax_' . $this->prefix . '_get_skills', array($this, 'get_skills'));
     }
+
+    /**
+     * Method get_skills
+     *
+     * @return void
+     */
+    public function get_skills()
+    {
+        $this->nonce_checker('get_skills_nonce');
+
+        $terms = get_terms('job_title_skills', array('hide_empty' => false));
+
+        //In case of deleting all job titles
+        if (empty($terms)) {
+            wp_send_json_error('No Skill found.You need to define the Skills first');
+            wp_die();
+        }
+        $options = '';
+        foreach ($terms as $term) {
+            $options .= '<option value="' . esc_attr($term->term_id) . '">' . esc_html($term->name) . '</option>';
+        }
+        wp_reset_postdata();
+        wp_send_json_success($options);
+        wp_die();
+
+    }
+
+
     /**
      * enqueue_editor_assets
      *
@@ -38,10 +75,11 @@ class Job_Application_Block_Plugin
      */
     public function enqueue_editor_assets()
     {
+
         wp_enqueue_script('job-application-block', plugins_url('job-application-block.js', __FILE__), array('wp-blocks', 'wp-i18n', 'wp-editor'), true, true);
 
         $args = array(
-            'post_type' => 'job_applications',
+            'post_type' => 'job_title',
             'post_status' => 'publish',
             'posts_per_page' => 1,
         );
@@ -57,6 +95,7 @@ class Job_Application_Block_Plugin
             'job_application_block_vars',
             array(
                 'init_detect' => $init_result,
+                'admin_url' => admin_url('edit-tags.php?taxonomy=job_title_skills&post_type=job_title')
             )
         );
     }
@@ -68,20 +107,29 @@ class Job_Application_Block_Plugin
      */
     public function enqueue_frontend_assets()
     {
-        wp_enqueue_script('job-application-block-front', plugins_url('frontend.js', __FILE__), array('jquery'), true, false);
-        wp_localize_script(
-            'job-application-block-front',
-            'job_application_frontend_vars',
-            array(
 
-                'ajax_url' => admin_url('admin-ajax.php'),
-                'get_job_titles_nonce' => wp_create_nonce('get_job_titles_nonce'),
-                'get_job_applications_nonce' => wp_create_nonce('get_job_applications_nonce'),
-                'save_job_applications_nonce' => wp_create_nonce('save_job_applications_nonce'),
-                'prefix' => $this->prefix . '_'
-            )
-        );
-        wp_enqueue_style('style', plugins_url('style.css', __FILE__), array(), true);
+
+
+        //enqueue style anc scripts if there is one instance of block is exist
+        if(has_block('jobapplicationablock/job-application-block')) {
+            wp_enqueue_script('job-application-block-front', plugins_url('frontend.js', __FILE__), array('jquery'), true, false);
+            wp_localize_script(
+                'job-application-block-front',
+                'job_application_frontend_vars',
+                array(
+
+                    'ajax_url' => admin_url('admin-ajax.php'),
+                    'get_job_titles_nonce' => wp_create_nonce('get_job_titles_nonce'),
+                    'get_skills_nonce' => wp_create_nonce('get_skills_nonce'),
+                    'get_job_applications_nonce' => wp_create_nonce('get_job_applications_nonce'),
+                    'save_job_applications_nonce' => wp_create_nonce('save_job_applications_nonce'),
+                    'prefix' => $this->prefix . '_'
+                    )
+            );
+
+            wp_enqueue_style('style', plugins_url('style.css', __FILE__), array(), true);
+        }
+
     }
 
     /**
@@ -218,13 +266,16 @@ class Job_Application_Block_Plugin
             array(
                 'label' => 'Skills',
                 'rewrite' => array('slug' => 'job_title_skills'),
-                'hierarchical' => false
+                'hierarchical' => false,
+                'public' => true,
+            'hierarchical' => false,
+            'show_ui' => true,
+            'show_admin_column' => true,
+            'show_in_rest' => true,
+            'meta_box_cb' => 'post_categories_meta_box'
             )
         );
     }
-
-
-
 
     /**
      * add_job_title_skills_field
@@ -242,8 +293,6 @@ class Job_Application_Block_Plugin
             'high'
         );
     }
-
-
 
     /**
      * render_job_title_skills_field
@@ -279,8 +328,6 @@ class Job_Application_Block_Plugin
         }
     }
 
-
-
     /**
      * save_job_title_skills_field
      * Save custom fields for skills value for Job Titles as post meta
@@ -290,15 +337,29 @@ class Job_Application_Block_Plugin
      */
     public function save_job_title_skills_field($post_id)
     {
-        if (isset($_POST['job_title_skills'])) {
-            $skills = $_POST['job_title_skills'];
-            update_post_meta($post_id, '_job_title_skills', $skills);
+
+        // check if this is an autosave
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
         }
+
+        // check if the current user has permission to edit the post
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        // get the selected skills from the post meta
+        $skills = isset($_POST['job_title_skills']) ? sanitize_text_field($_POST['job_title_skills']) : array();
+
+        // make sure the skills are integers
+        $skills = array_map('intval', $skills);
+
+        // set the post terms without creating new terms
+        wp_set_post_terms($post_id, $skills, 'job_title_skills');
+        update_post_meta($post_id, '_job_title_skills', $skills);
+
+
     }
-
-
-
-
 
     /**
      * create_job_applications_post_type
@@ -334,32 +395,64 @@ class Job_Application_Block_Plugin
         // Check the nonce
         // internal function to check nonce
         $this->nonce_checker('get_job_applications_nonce');
-        $paged = isset($_POST['page']) ? intval($_POST['page']) : 1;
+        $paged = isset($_POST['page']) ? intval(sanitize_text_field($_POST['page'])) : 1;
+        $paginationLength=sanitize_text_field($_POST['paginationLength']);
 
-        if (isset($_POST['job_title_id']) && $_POST['job_title_id'] !== '-1') {
+
+        if($_POST['filter']==='nofilter') {
+
+            // Prepare the query arguments
+            $args = array(
+            'post_type' => 'job_applications',
+            'posts_per_page' => -1, // Get all posts
+            'paged' => $paged,
+            'posts_per_page' => $paginationLength
+            );
+
+        } elseif($_POST['filter']==='skillFilterSelect') {
+            $args=array(
+                        'post_type'=>'job_applications',
+                        'meta_query'=>array(
+                            array(
+                                'key'=>'job_title_id',
+                                'value'=>get_posts(
+                                    array(
+                                    'post_type' => 'job_title',
+                                    'tax_query' => array(
+                                        array(
+                                            'taxonomy' => 'job_title_skills',
+                                            'field' => 'term_id',
+                                            'terms' => sanitize_text_field($_POST['value']),
+                                        )
+                                    ),
+                                    'fields' => 'ids',
+                                    'posts_per_page' => -1,
+                    )
+                                ),
+                                'compare'=>'in'
+                            )
+                        ),
+                'paged' => $paged,
+                'posts_per_page' => $paginationLength
+                            );
+
+
+
+        } elseif ($_POST['filter'] === 'jobTitleFilterSelect') {
             $args = array(
                 'post_type' => 'job_applications',
                 'meta_query' => array(
                     array(
                         'key' => 'job_title_id',
-                        'value' => $_POST['job_title_id'],
+                        'value' => sanitize_text_field($_POST['value']),
                         'compare' => '=',
                     ),
                 ),
                 'paged' => $paged,
-                'posts_per_page' => 2
-            );
-        } else {
-            // Prepare the query arguments
-            $args = array(
-                'post_type' => 'job_applications',
-                'posts_per_page' => -1, // Get all posts
-                'paged' => $paged,
-                'posts_per_page' => 2
+                'posts_per_page' => $paginationLength
             );
         }
 
-        // Run the query
         $query = new WP_Query($args);
 
         // Get the posts
