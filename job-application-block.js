@@ -81,8 +81,6 @@ wp.blocks.registerBlockType('jobapplicationablock/job-application-block', {
                             React.createElement("tbody", null))
                     ),
                     React.createElement("div", { class: "pagination-container" })
-
-
                 )
             );
         }

@@ -95,7 +95,7 @@ jQuery(document).ready(function($) {
     //submit form send data with nonce to server
     $("#easyApply").submit(function(event) {
         event.preventDefault(); // prevent the default form submission behavior
-
+        $('table.job-applications-table tbody').addClass("spinner");
         let formInputs = $(this).find("input ,select");
         let isValid = true;
 
@@ -155,6 +155,9 @@ jQuery(document).ready(function($) {
                 error: function() {
                     alert("Form submission failed.");
                 },
+                 complete: function() {
+                    $('table.job-applications-table tbody').removeClass("spinner");
+                }
             });
 
         }
