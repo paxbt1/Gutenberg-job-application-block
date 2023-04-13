@@ -62,7 +62,7 @@ class Job_Application_Block_Plugin
         foreach ($terms as $term) {
             $options .= '<option value="' . esc_attr($term->term_id) . '">' . esc_html($term->name) . '</option>';
         }
-        wp_reset_postdata();
+
         wp_send_json_success($options);
         wp_die();
 
@@ -89,6 +89,7 @@ class Job_Application_Block_Plugin
         if (empty($terms) || !$query->have_posts()) {
             $init_result = false;
         }
+        wp_reset_postdata();
         wp_localize_script(
             'job-application-block',
             'job_application_block_vars',
@@ -162,7 +163,7 @@ class Job_Application_Block_Plugin
         $firstName = isset($_POST['firstName']) ? sanitize_text_field($_POST['firstName']) : '';
         $lastName = isset($_POST['lastName']) ? sanitize_text_field($_POST['lastName']) : '';
         $entryDate = isset($_POST['entryDate']) ? sanitize_text_field($_POST['entryDate']) : '';
-
+        $paginationLength=sanitize_text_field($_POST['paginationLength']);
         // Validate the entryDate field
         $date_parts = explode('-', $entryDate);
         if (count($date_parts) !== 3 || !checkdate($date_parts[1], $date_parts[2], $date_parts[0])) {
@@ -207,10 +208,33 @@ class Job_Application_Block_Plugin
                 }
             }
 
+
+
+            // Prepare the pagination links
+
+            $args = array(
+                'post_type' => 'job_applications',
+                'paged' => 1,
+                'posts_per_page' => $paginationLength
+            );
+
+            $query = new WP_Query($args);
+
+            $pagination = paginate_links(array(
+                // disable defaulc behave of pagination links
+                'base' => 'javascript:void(0);',
+                'total' => $query->max_num_pages,
+                'current' => 1,
+                'prev_next' => false,
+                'prev_text' => __('&laquo; Previous'),
+                'next_text' => __('Next &raquo;'),
+                'disable' => true
+            ));
+
             $response = array(
                 'success' => true,
                 'jobSkills' => $skills,
-                'message' => 'Data saved successfully',
+                'pagination'=>$pagination
             );
         } else {
             $response = array(
@@ -218,7 +242,7 @@ class Job_Application_Block_Plugin
                 'message' => 'Error saving data',
             );
         }
-
+        wp_reset_postdata();
         wp_send_json($response);
         wp_die();
     }
@@ -379,39 +403,45 @@ class Job_Application_Block_Plugin
         // Check the nonce
         // internal function to check nonce
         $this->nonce_checker('get_job_applications_nonce');
+        //get the page
         $paged = isset($_POST['page']) ? intval(sanitize_text_field($_POST['page'])) : 1;
+        //get pagination length the default value would be 5 post per page that defined in block definition js file
         $paginationLength=sanitize_text_field($_POST['paginationLength']);
 
-        if($_POST['filter']==='nofilter') {
+        //if ther is no filter or filters selected to Show All pass throw Ajax request, so return all job applications
+        if($_POST['filter']==='nofilter' || $_POST['value']=="-1") {
 
             // Prepare the query arguments
             $args = array(
             'post_type' => 'job_applications',
-            'posts_per_page' => -1, // Get all posts
             'paged' => $paged,
             'posts_per_page' => $paginationLength
             );
 
         } elseif($_POST['filter']==='skillFilterSelect') {
+            //Filter by Skills would selected so return all job applications that the skill asign them throw job title
+            $terms=get_posts(
+                //just need the job title id so I used get_posts which is easy and retunr simple array
+                array(
+                'post_type' => 'job_title',
+                'tax_query' => array(
+                    array(
+                        'taxonomy' => 'job_title_skills',
+                        'field' => 'term_id',
+                        'terms' => sanitize_text_field($_POST['value']),
+                    )
+                ),
+                'fields' => 'ids',
+                'posts_per_page' => -1,
+                    )
+            );
             $args=array(
                     'post_type'=>'job_applications',
                     'meta_query'=>array(
                         array(
                             'key'=>'job_title_id',
-                            'value'=>get_posts(
-                                array(
-                                'post_type' => 'job_title',
-                                'tax_query' => array(
-                                    array(
-                                        'taxonomy' => 'job_title_skills',
-                                        'field' => 'term_id',
-                                        'terms' => sanitize_text_field($_POST['value']),
-                                    )
-                                ),
-                                'fields' => 'ids',
-                                'posts_per_page' => -1,
-                                    )
-                            ),
+                            // In the case of a skill that has no application, it should not return anything
+                            'value'=>$terms!=null ? $terms : -1,
                             'compare'=>'in'
                         )
                     ),
@@ -420,30 +450,20 @@ class Job_Application_Block_Plugin
             );
 
         } elseif ($_POST['filter'] === 'jobTitleFilterSelect') {
-
-            if($_POST['value']=="-1") {
-                $args = array(
-                    'post_type' => 'job_applications',
-                    'paged' => $paged,
-                    'posts_per_page' => $paginationLength
-                );
-
-            } else {
-
-                $args = array(
-                    'post_type' => 'job_applications',
-                    'meta_query' => array(
-                        array(
-                            'key' => 'job_title_id',
-                            // اگر منفی یک بود حالی بفرسه
-                            'value' => $_POST['value']=="-1" ? true : sanitize_text_field($_POST['value']),
-                            'compare' => '=',
-                        ),
+            //Filter by job title would selected so return all job applications that the skill asign them throw job title
+            $args = array(
+                'post_type' => 'job_applications',
+                'meta_query' => array(
+                    array(
+                        'key' => 'job_title_id',
+                        'value' => sanitize_text_field($_POST['value']),
+                        'compare' => '=',
                     ),
-                    'paged' => $paged,
-                    'posts_per_page' => $paginationLength
-                );
-            }
+                ),
+                'paged' => $paged,
+                'posts_per_page' => $paginationLength
+            );
+
         }
 
         $query = new WP_Query($args);
@@ -452,6 +472,7 @@ class Job_Application_Block_Plugin
         $posts = $query->get_posts();
 
         // Prepare the pagination links
+        // disable defaulc behave of pagination links
         $pagination = paginate_links(array(
             'base' => 'javascript:void(0);',
             'total' => $query->max_num_pages,
@@ -471,7 +492,6 @@ class Job_Application_Block_Plugin
             $skills = '';
             if (!empty($terms) && !is_wp_error($terms)) {
                 foreach ($terms as $term) {
-                    // $skills.=$term;
                     $skills .= get_term($term, 'job_title_skills')->name . '<br>';
                 }
             }
@@ -486,13 +506,12 @@ class Job_Application_Block_Plugin
             );
         }
 
-
+        wp_reset_postdata();
         // Return the response with the pagination links
         wp_send_json_success(array(
             'rows' => $data,
             'pagination' => $pagination,
         ));
-        // wp_send_json_success($data);
         wp_die();
     }
 

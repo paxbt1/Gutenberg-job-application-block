@@ -3,7 +3,10 @@ wp.blocks.registerBlockType('jobapplicationablock/job-application-block', {
     icon: "smiley",
     category: "design",
     attributes: {
-        paginationLength: {type:'string'}  
+        paginationLength: {
+            type: 'string',
+            default: 5
+        }  
     },
     edit: function (props) {
 
