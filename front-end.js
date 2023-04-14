@@ -3,11 +3,11 @@ jQuery(document).ready(function($) {
     let paginationLength = Number($('#paginationLength').val());
     //get All jobtitles and fill Select with it
     $.ajax({
-        url: job_application_frontend_vars.ajax_url,
+        url: job_application_front_end_vars.ajax_url,
         type: 'POST',
         data: {
-            action: job_application_frontend_vars.prefix + 'get_job_titles',
-            security: job_application_frontend_vars.get_job_titles_nonce
+            action: job_application_front_end_vars.prefix + 'get_job_titles',
+            security: job_application_front_end_vars.get_job_titles_nonce
         },
         success: function(response) {
             if (response.success) {
@@ -28,11 +28,11 @@ jQuery(document).ready(function($) {
     
 
     $.ajax({
-        url: job_application_frontend_vars.ajax_url,
+        url: job_application_front_end_vars.ajax_url,
         type: 'POST',
         data: {
-            action: job_application_frontend_vars.prefix + 'get_skills',
-            security: job_application_frontend_vars.get_skills_nonce
+            action: job_application_front_end_vars.prefix + 'get_skills',
+            security: job_application_front_end_vars.get_skills_nonce
         },
         success: function(response) {
             if (response.success) {
@@ -52,11 +52,11 @@ jQuery(document).ready(function($) {
     $('table.job-applications-table tbody').addClass("spinner");
     //get all entries and fill table with it   
     $.ajax({
-        url: job_application_frontend_vars.ajax_url,
+        url: job_application_front_end_vars.ajax_url,
         type: 'POST',
         data: {
-            action: job_application_frontend_vars.prefix + 'get_job_applications',
-            security: job_application_frontend_vars.get_job_applications_nonce,
+            action: job_application_front_end_vars.prefix + 'get_job_applications',
+            security: job_application_front_end_vars.get_job_applications_nonce,
             filter: 'nofilter',
             page: 1,
             paginationLength:paginationLength
@@ -91,6 +91,13 @@ jQuery(document).ready(function($) {
 
     });
 
+    // this fucntion is responsible to chech if selected Entry Date is passed or not
+    function isFutureDate(dateString) {
+    const selectedDate = new Date(dateString);
+    const today = new Date();
+    
+    return selectedDate >= today;
+    }
 
     //submit form send data with nonce to server
     $("#easyApply").submit(function (event) {
@@ -99,11 +106,11 @@ jQuery(document).ready(function($) {
         let formInputs = $(this).find("input ,select");
         let isValid = true;
         
-        job_application_frontend_vars.get_job_titles_nonce
+        job_application_front_end_vars.get_job_titles_nonce
         formInputs.each(function() {
             let input = $(this);
             // Check if input is empty and first filters options selected which is place holder so not valid
-            if (input.val() === "" || (input.is('select') && input.val() === input.find('option:first').val())) {
+            if (input.val() === "" || (input.is('select') && input.val() === input.find('option:first').val()) || (input.is('input[type=date]') && !isFutureDate(input.val()))) {
                 input.css("border-color", "#f44336");
                 isValid = false;
             } else {
@@ -122,10 +129,10 @@ jQuery(document).ready(function($) {
             
             $.ajax({
                 type: "POST",
-                url: job_application_frontend_vars.ajax_url,
+                url: job_application_front_end_vars.ajax_url,
                 data: {
-                    action: job_application_frontend_vars.prefix + "save_job_applications",
-                    security: job_application_frontend_vars.save_job_applications_nonce,
+                    action: job_application_front_end_vars.prefix + "save_job_applications",
+                    security: job_application_front_end_vars.save_job_applications_nonce,
                     jobTitle: jobTitleId,
                     firstName: firstName,
                     lastName: lastName,
@@ -182,10 +189,10 @@ jQuery(document).ready(function($) {
         $.ajax({
             type: 'POST',
             dataType: 'JSON',
-            url: job_application_frontend_vars.ajax_url,
+            url: job_application_front_end_vars.ajax_url,
             data: {
-                action: job_application_frontend_vars.prefix + 'get_job_applications',
-                security: job_application_frontend_vars.get_job_applications_nonce,
+                action: job_application_front_end_vars.prefix + 'get_job_applications',
+                security: job_application_front_end_vars.get_job_applications_nonce,
                 filter : 'jobTitleFilterSelect',
                 value:jobTitleId,
                 page: 1,
@@ -228,10 +235,10 @@ jQuery(document).ready(function($) {
         $.ajax({
             type: 'POST',
             dataType: 'JSON',
-            url: job_application_frontend_vars.ajax_url,
+            url: job_application_front_end_vars.ajax_url,
             data: {
-                action: job_application_frontend_vars.prefix + 'get_job_applications',
-                security: job_application_frontend_vars.get_job_applications_nonce,
+                action: job_application_front_end_vars.prefix + 'get_job_applications',
+                security: job_application_front_end_vars.get_job_applications_nonce,
                 filter:'skillFilterSelect',
                 value: jobTitleId,
                 page: 1,
@@ -287,10 +294,10 @@ jQuery(document).ready(function($) {
         $.ajax({
             type: 'POST',
             dataType: 'JSON',
-            url: job_application_frontend_vars.ajax_url,
+            url: job_application_front_end_vars.ajax_url,
             data: {
-                action: job_application_frontend_vars.prefix + 'get_job_applications',
-                security: job_application_frontend_vars.get_job_applications_nonce,
+                action: job_application_front_end_vars.prefix + 'get_job_applications',
+                security: job_application_front_end_vars.get_job_applications_nonce,
                 filter: filter,
                 value: value,
                 page: page,
