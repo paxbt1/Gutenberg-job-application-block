@@ -44,6 +44,9 @@ class Job_Application_Block_Plugin
 
         add_action('wp_ajax_nopriv_' . $this->prefix . '_get_skills', array($this, 'get_skills'));
         add_action('wp_ajax_' . $this->prefix . '_get_skills', array($this, 'get_skills'));
+
+        add_action('admin_notices', array($this,'admin_notice'));
+
     }
 
     /**
@@ -554,6 +557,28 @@ class Job_Application_Block_Plugin
         wp_send_json_success($options);
         wp_die();
     }
+    // Add admin notice if custom post type has no taxonomy
+    public function admin_notice()
+    {
+
+
+        $jobtitle=get_posts(
+            array(
+                  'post_type' => 'job_title',
+                )
+        );
+        $terms = get_terms(array('taxonomy'=>'job_title_skills','hide_empty' => false));
+
+        if (empty($terms) || empty($jobtitle)) {
+            ?>
+            <div class="notice notice-warning is-dismissible">
+                <p><?= esc_html('No job titles found.You need to define the job title and skills first')?></p>
+            </div>
+            <?php
+        }
+    }
+
+
 
 }
 

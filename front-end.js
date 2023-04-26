@@ -49,6 +49,7 @@ jQuery(document).ready(function($) {
         }
     });
 
+
     $('table.job-applications-table tbody').addClass("spinner");
     //get all entries and fill table with it   
     $.ajax({
